@@ -10,22 +10,25 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import com.parse.LogInCallback;
+import com.parse.Parse;
 import com.parse.ParseAnonymousUtils;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 
 import com.parse.ParseAnalytics;
 import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 public class MainActivity extends AppCompatActivity {
 
-    public void redirectUser (String userType) {
+    public void redirectUser () {
         Intent intent;
+        String userType = ParseUser.getCurrentUser().get("Type").toString();
 
-        if (userType == "rider"){
+        if (userType.equals("rider")){
             intent = new Intent(getApplicationContext(),RiderActivity.class);
             startActivity(intent);
-        } else if (userType == "driver"){
+        } else if (userType.equals("driver")){
             //redirect to driver screen
         }
 
@@ -40,9 +43,14 @@ public class MainActivity extends AppCompatActivity {
             userType = "driver";
         }
         ParseUser.getCurrentUser().put("Type", userType);
+        ParseUser.getCurrentUser().saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                //Redirect
+                redirectUser();
+            }
+        });
 
-        //Redirect
-        redirectUser(userType);
     }
 
     @Override
@@ -63,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
             });
         } else {
             if(ParseUser.getCurrentUser().get("Type") != null){
-                redirectUser(ParseUser.getCurrentUser().get("Type").toString());
+                redirectUser();
             }
         }
 

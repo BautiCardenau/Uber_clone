@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -24,7 +25,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.FindCallback;
+import com.parse.Parse;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
+import java.util.List;
 import java.util.Locale;
 
 public class RiderActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -34,22 +44,60 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     LocationListener locationListener;
     Boolean isUberRequested = false;
     LatLng latLng;
+    Button callUberButton;
 
     public void requestOrCancelUber (View view){
 
-        Button callUberButton = findViewById(R.id.callUberButton);
+        if (isUberRequested) {
+            ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
+            query.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
+            query.findInBackground(new FindCallback<ParseObject>() {
+                @Override
+                public void done(List<ParseObject> objects, ParseException e) {
 
-        if (!isUberRequested){
-            callUberButton.setText("Cancel uber");
-            isUberRequested = true;
+                    if (e == null){
+                        if (objects.size() > 0) {
+                            for (ParseObject object:objects){
+                                object.deleteInBackground();
+                            }
+                            isUberRequested = false;
+                            callUberButton.setText("Call uber");
+                        }
+                    }
+
+                }
+            });
+
         } else {
-            callUberButton.setText("call uber");
-            isUberRequested = false;
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            } else {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 30, 10, locationListener);
+                Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+                if (lastKnownLocation != null) {
+                    ParseObject request = new ParseObject("Request");
+                    request.put("username", ParseUser.getCurrentUser().getUsername());
+                    ParseGeoPoint parseGeoPoint = new ParseGeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                    request.put("location", parseGeoPoint);
+                    request.saveInBackground(new SaveCallback() {
+                        @Override
+                        public void done(ParseException e) {
+                            if (e == null) {
+                                callUberButton.setText("Cancel uber");
+                                isUberRequested = true;
+                            } else {
+                                Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                }
+            }
         }
     }
 
     public void centerMap (View view) {
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20));
     }
 
     @Override
@@ -76,6 +124,23 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        callUberButton = findViewById(R.id.callUberButton);
+
+        ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
+        query.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
+        query.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+
+                if (e == null){
+                    if (objects.size() > 0) {
+                        isUberRequested = true;
+                        callUberButton.setText("Cancel uber");
+                    }
+                }
+
+            }
+        });
     }
 
     @Override
