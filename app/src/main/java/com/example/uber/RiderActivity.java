@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.location.Location;
@@ -45,6 +46,13 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     Boolean isUberRequested = false;
     LatLng latLng;
     Button callUberButton;
+
+    public void logOut (View view){
+        ParseUser.logOut();
+
+        Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+        startActivity(intent);
+    }
 
     public void requestOrCancelUber (View view){
 

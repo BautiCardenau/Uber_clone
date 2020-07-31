@@ -16,7 +16,7 @@
         map:layout_constraintHorizontal_bias="1.0"
         map:layout_constraintStart_toStartOf="parent"
         map:layout_constraintTop_toTopOf="parent"
-        map:layout_constraintVertical_bias="1.0"
+        map:layout_constraintVertical_bias="0.0"
         tools:context=".RiderActivity" />
 
     <Button
@@ -34,6 +34,19 @@
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintHorizontal_bias="0.501"
         map:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/callUberButton2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="#323232"
+        android:onClick="logOut"
+        android:text="log out"
+        android:textColor="@android:color/white"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/centerImageView"

@@ -29,8 +29,10 @@ public class MainActivity extends AppCompatActivity {
             intent = new Intent(getApplicationContext(),RiderActivity.class);
             startActivity(intent);
         } else if (userType.equals("driver")){
-            //redirect to driver screen
+            intent = new Intent(getApplicationContext(),DriverActivity.class);
+            startActivity(intent);
         }
+
 
     }
 
@@ -50,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
                 redirectUser();
             }
         });
-
     }
 
     @Override
