@@ -20,7 +20,7 @@
         tools:context=".RiderActivity" />
 
     <Button
-        android:id="@+id/callUberButton"
+        android:id="@+id/acceptRideButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -36,7 +36,7 @@
         map:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/callUberButton2"
+        android:id="@+id/logOutButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -59,6 +59,6 @@
         android:src="@drawable/location"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintStart_toEndOf="@+id/callUberButton" />
+        map:layout_constraintStart_toEndOf="@+id/acceptRideButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

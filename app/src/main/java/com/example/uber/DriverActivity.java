@@ -156,7 +156,7 @@ public class DriverActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
                 //start navigating towards this route
 
-                if (Build.VERSION.SDK_INT < 23 || ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+                if (Build.VERSION.SDK_INT < 23 || ContextCompat.checkSelfPermission(DriverActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                     Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                     if (lastKnownLocation != null && requestLatitudes.size() > i && requestLongitudes.size() > i){
 
@@ -164,6 +164,8 @@ public class DriverActivity extends AppCompatActivity {
                         Intent intent = new Intent(getApplicationContext(), requestInMapsActivity.class);
                         intent.putExtra("requestLatitude", requestLatitudes.get(i));
                         intent.putExtra("requestLongitude", requestLongitudes.get(i));
+                        intent.putExtra("driverLatitude", lastKnownLocation.getLatitude());
+                        intent.putExtra("driverLongitude", lastKnownLocation.getLongitude());
                         startActivity(intent);
 
                     }

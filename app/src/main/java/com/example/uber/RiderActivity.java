@@ -9,7 +9,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,7 +26,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -36,7 +34,6 @@ import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
 import java.util.List;
-import java.util.Locale;
 
 public class RiderActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -132,7 +129,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        callUberButton = findViewById(R.id.callUberButton);
+        callUberButton = findViewById(R.id.acceptRideButton);
 
         ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
         query.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
