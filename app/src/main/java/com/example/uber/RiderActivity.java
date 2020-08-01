@@ -1,6 +1,7 @@
 package com.example.uber;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -14,8 +15,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -26,6 +29,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -43,12 +47,69 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     Boolean isUberRequested = false;
     LatLng latLng;
     Button callUberButton;
+    TextView infoTextView;
+
+    Handler handler = new Handler();
 
     public void logOut (View view){
         ParseUser.logOut();
 
         Intent intent = new Intent(getApplicationContext(),MainActivity.class);
         startActivity(intent);
+    }
+
+    public void checkForUpdates(){
+
+        ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
+        query.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
+        query.whereExists("driverUsername");
+
+        query.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e==null){
+                    if (objects.size() > 0){
+
+                        ParseQuery<ParseUser> query = ParseUser.getQuery();
+                        query.whereEqualTo("username", objects.get(0).getString("driverUsername"));
+                        query.findInBackground(new FindCallback<ParseUser>() {
+                            @Override
+                            public void done(List<ParseUser> objects, ParseException e) {
+
+                                if (e == null && objects.size() > 0){
+
+                                    ParseGeoPoint driverLocation = objects.get(0).getParseGeoPoint("location");
+
+                                    if (Build.VERSION.SDK_INT < 23 || ContextCompat.checkSelfPermission(RiderActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                                        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+                                        if (lastKnownLocation != null){
+
+                                            ParseGeoPoint userLocation = new ParseGeoPoint(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+                                            double distance = (double) Math.round(userLocation.distanceInKilometersTo(driverLocation) * 10)/10;
+                                            infoTextView.setText("Your driver is " + distance + " km away");
+                                        }
+                                    }
+
+                                }
+
+                            }
+                        });
+
+                        callUberButton.setVisibility(View.INVISIBLE);
+
+                    }
+
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            checkForUpdates();
+                        }
+                    }, 2000);
+                }
+            }
+        });
+
     }
 
     public void requestOrCancelUber (View view){
@@ -68,6 +129,13 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                             isUberRequested = false;
                             callUberButton.setText("Call uber");
                         }
+
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                checkForUpdates();
+                            }
+                        }, 2000);
                     }
 
                 }
@@ -91,6 +159,13 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                             if (e == null) {
                                 callUberButton.setText("Cancel uber");
                                 isUberRequested = true;
+
+                                handler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        checkForUpdates();
+                                    }
+                                }, 2000);
                             } else {
                                 Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                             }
@@ -129,7 +204,9 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         callUberButton = findViewById(R.id.acceptRideButton);
+        infoTextView = findViewById(R.id.infoTextView);
 
         ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
         query.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
@@ -141,6 +218,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                     if (objects.size() > 0) {
                         isUberRequested = true;
                         callUberButton.setText("Cancel uber");
+                        checkForUpdates();
                     }
                 }
 

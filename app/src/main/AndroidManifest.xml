@@ -44,9 +44,6 @@
         <activity
             android:name=".requestInMapsActivity"
             android:label="@string/title_activity_request_in_maps"></activity>
-        <activity
-            android:name=".DriverNavigationActivity"
-            android:label="@string/title_activity_driver_navigation" />
         <activity android:name=".DriverActivity" />
         <activity
             android:name=".RiderActivity"

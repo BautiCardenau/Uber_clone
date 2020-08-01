@@ -33,6 +33,7 @@ import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,7 +51,7 @@ public class DriverActivity extends AppCompatActivity {
     ArrayAdapter adapter;
     ArrayList<Double> requestLatitudes = new ArrayList<Double>();
     ArrayList<Double> requestLongitudes = new ArrayList<Double>();
-
+    ArrayList<String> usernames = new ArrayList<String>();
 
     public void getLocation(){
         if (Build.VERSION.SDK_INT < 23) {
@@ -96,7 +97,7 @@ public class DriverActivity extends AppCompatActivity {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
-            public void onLocationChanged(Location location) {
+            public void onLocationChanged(final Location location) {
                 latLng = new LatLng(location.getLatitude(),location.getLongitude());
                 final ParseGeoPoint driversLocation = new ParseGeoPoint(location.getLatitude(),location.getLongitude());
 
@@ -104,6 +105,7 @@ public class DriverActivity extends AppCompatActivity {
 
                 ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
                 query.whereNear("location", driversLocation);
+                query.whereDoesNotExist("driverUsername");
                 query.setLimit(5);
 
                 query.findInBackground(new FindCallback<ParseObject>() {
@@ -122,11 +124,17 @@ public class DriverActivity extends AppCompatActivity {
                                     clientsArrayList.add(distance + " km");
                                     requestLatitudes.add(requestLocation.getLatitude());
                                     requestLongitudes.add(requestLocation.getLongitude());
+                                    usernames.add(object.getString("username"));
                                 }
                             } else {
                                 clientsArrayList.add("No nearby requests");
                             }
                             adapter.notifyDataSetChanged();
+
+                            //Save driver's location
+
+                            ParseUser.getCurrentUser().put("location", new ParseGeoPoint(location.getLatitude(),location.getLongitude()));
+                            ParseUser.getCurrentUser().saveInBackground();
                         }
                     }
                 });
@@ -158,7 +166,7 @@ public class DriverActivity extends AppCompatActivity {
 
                 if (Build.VERSION.SDK_INT < 23 || ContextCompat.checkSelfPermission(DriverActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                     Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (lastKnownLocation != null && requestLatitudes.size() > i && requestLongitudes.size() > i){
+                    if (lastKnownLocation != null && requestLatitudes.size() > i && requestLongitudes.size() > i && usernames.size() > i){
 
                         //Redirect driver to map showing both locations
                         Intent intent = new Intent(getApplicationContext(), requestInMapsActivity.class);
@@ -166,6 +174,7 @@ public class DriverActivity extends AppCompatActivity {
                         intent.putExtra("requestLongitude", requestLongitudes.get(i));
                         intent.putExtra("driverLatitude", lastKnownLocation.getLatitude());
                         intent.putExtra("driverLongitude", lastKnownLocation.getLongitude());
+                        intent.putExtra("username", usernames.get(i));
                         startActivity(intent);
 
                     }
