@@ -21,12 +21,15 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.FindCallback;
 import com.parse.Parse;
@@ -48,6 +51,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     LatLng latLng;
     Button callUberButton;
     TextView infoTextView;
+    Marker userMarker;
+    Boolean isDriverAssigned = false;
 
     Handler handler = new Handler();
 
@@ -78,6 +83,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
                                 if (e == null && objects.size() > 0){
 
+                                    isDriverAssigned = true;
+
                                     ParseGeoPoint driverLocation = objects.get(0).getParseGeoPoint("location");
 
                                     if (Build.VERSION.SDK_INT < 23 || ContextCompat.checkSelfPermission(RiderActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
@@ -88,6 +95,69 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                                             ParseGeoPoint userLocation = new ParseGeoPoint(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
                                             double distance = (double) Math.round(userLocation.distanceInKilometersTo(driverLocation) * 10)/10;
                                             infoTextView.setText("Your driver is " + distance + " km away");
+
+                                            if (distance < 0.01){
+
+                                                infoTextView.setText("Your driver is here");
+                                                isDriverAssigned = false;
+
+                                                ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("Request");
+                                                query.whereEqualTo("username",ParseUser.getCurrentUser().getUsername());
+
+                                                query.findInBackground(new FindCallback<ParseObject>() {
+                                                    @Override
+                                                    public void done(List<ParseObject> objects, ParseException e) {
+                                                        if (e == null && objects.size() > 0){
+                                                            for (ParseObject object : objects){
+                                                                object.deleteInBackground();
+                                                            }
+                                                        }
+                                                    }
+                                                });
+
+                                                handler.postDelayed(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        infoTextView.setText("");
+                                                        callUberButton.setVisibility(View.VISIBLE);
+                                                        callUberButton.setText("Call uber");
+                                                        isUberRequested = false;
+                                                    }
+                                                }, 5000);
+
+                                            } else {
+
+                                                mMap.clear();
+
+                                                LatLng userLatLng = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+                                                LatLng driverLatLng = new LatLng(driverLocation.getLatitude(),driverLocation.getLongitude());
+
+                                                Marker driverMarker= mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Driver's Location").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                                                userMarker = mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.stickman)));
+
+                                                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+                                                builder.include(userMarker.getPosition());
+                                                builder.include(driverMarker.getPosition());
+
+                                                LatLngBounds bounds = builder.build();
+
+                                                int width = getResources().getDisplayMetrics().widthPixels;
+                                                int height = getResources().getDisplayMetrics().heightPixels;
+                                                int padding = (int) (width * 0.40); // offset from edges of the map 10% of screen
+
+                                                CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+                                                mMap.animateCamera(cu);
+
+                                                callUberButton.setVisibility(View.INVISIBLE);
+
+                                                handler.postDelayed(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        checkForUpdates();
+                                                    }
+                                                }, 2000);
+                                            }
                                         }
                                     }
 
@@ -95,11 +165,10 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
                             }
                         });
-
-                        callUberButton.setVisibility(View.INVISIBLE);
-
                     }
+                }
 
+                if (!isDriverAssigned){
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -235,7 +304,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             public void onLocationChanged(Location location) {
                 mMap.clear();
                 latLng = new LatLng(location.getLatitude(),location.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.stickman)));
+                userMarker = mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.stickman)));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,20));
             }
 
@@ -269,7 +338,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
                 mMap.clear();
                 LatLng latLng = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.stickman)));
+                userMarker = mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.stickman)));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,20));
             }
         }
